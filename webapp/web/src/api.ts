@@ -66,10 +66,12 @@ export interface DeliverableDetail {
 }
 
 async function http<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-  });
+  // Only declare a JSON content-type when we actually send a body, so bodyless
+  // POSTs don't trip Fastify's empty-JSON-body guard.
+  const headers = init?.body
+    ? { "Content-Type": "application/json", ...(init?.headers ?? {}) }
+    : init?.headers;
+  const res = await fetch(url, { ...init, headers });
   if (!res.ok) {
     let detail = "";
     try { detail = JSON.stringify(await res.json()); } catch { /* ignore */ }

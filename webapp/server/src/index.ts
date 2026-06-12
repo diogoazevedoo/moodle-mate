@@ -10,6 +10,22 @@ import { registerRoutes } from "./routes.js";
 async function main(): Promise<void> {
   const app = Fastify({ logger: true });
 
+  // Our bodyless POSTs (sync/plan/draft/cancel/approve-plan) still send
+  // `Content-Type: application/json`; Fastify rejects an empty JSON body with
+  // FST_ERR_CTP_EMPTY_JSON_BODY (400). Treat an empty body as `{}`.
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+    const text = typeof body === "string" ? body : "";
+    if (text.trim() === "") {
+      done(null, {});
+      return;
+    }
+    try {
+      done(null, JSON.parse(text));
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  });
+
   const webDist = resolve(PROJECT_ROOT, "webapp/web/dist");
   if (existsSync(webDist)) {
     await app.register(fastifyStatic, { root: webDist, prefix: "/" });
