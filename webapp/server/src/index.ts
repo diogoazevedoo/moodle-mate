@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
 import { HOST, PORT, PROJECT_ROOT } from "./config.js";
+import { reapStaleRuns } from "./db.js";
 import { registerRoutes } from "./routes.js";
 
 async function main(): Promise<void> {
@@ -33,6 +34,9 @@ async function main(): Promise<void> {
   } else {
     app.log.warn(`Dashboard build not found at ${webDist}; in dev use the Vite server on :5173.`);
   }
+
+  const reaped = reapStaleRuns();
+  if (reaped > 0) app.log.warn(`Reaped ${reaped} stale run(s) from a previous process.`);
 
   await registerRoutes(app);
 

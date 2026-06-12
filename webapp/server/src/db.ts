@@ -258,6 +258,21 @@ export function listRunsForDeliverable(deliverableId: string): Run[] {
     .prepare(`SELECT * FROM run WHERE deliverableId=? ORDER BY startedAt DESC`)
     .all(deliverableId) as Run[];
 }
+/** On startup, mark runs left mid-flight by a previous process as cancelled, and
+ *  deny their dangling approvals — their subprocesses are gone. Returns count. */
+export function reapStaleRuns(): number {
+  const ts = now();
+  const info = db
+    .prepare(
+      `UPDATE run SET status='cancelled', error=COALESCE(error,'server restarted; subprocess gone'),
+       endedAt=COALESCE(endedAt, ?) WHERE status IN ('queued','running','awaiting_approval')`,
+    )
+    .run(ts);
+  db.prepare(
+    `UPDATE approval SET decision='deny', reason=COALESCE(reason,'server restarted'), decidedAt=COALESCE(decidedAt, ?) WHERE decision='pending'`,
+  ).run(ts);
+  return info.changes;
+}
 
 // ---- run events (also the SSE replay buffer) ----
 export function addRunEvent(runId: string, type: SseEventType, payload: unknown): RunEvent {

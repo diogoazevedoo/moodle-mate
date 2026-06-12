@@ -60,7 +60,9 @@ function planPrompt(d: Deliverable): string {
   return `You are moodle-mate's PLANNER for a university student.
 
 Your job: produce a concise, ordered plan for the following Moodle deliverable.
-Do NOT write any files. Do NOT use Write/Edit/Bash. This is planning only.
+Do NOT write any files. Use the Read, Glob, and Grep tools to inspect context —
+do NOT use Bash/Write/Edit (they pause for the student's approval and aren't
+needed to plan). This is planning only.
 
 Deliverable:
 ${fmtDeliverable(d)}
@@ -98,7 +100,9 @@ ${stepsText}
 Rules (CLAUDE.md — non-negotiable):
 - This is a DRAFT the student must review, edit, and own. Label it DRAFT; cite
   sources. NEVER submit/upload to Moodle. Only operate on ${MOODLE_BASE_URL}.
-- Every Write/Edit/Bash you request pauses for the student's approval — expected.
+- To inspect files/context use the Read, Glob, and Grep tools — NOT Bash
+  (ls/cat/find), which pauses for the student's approval. Reserve Bash for running
+  builds, tests, or packaging. Each Write/Edit/Bash pauses for approval — expected.
 
 Output guidance:
 - Documents: write markdown into ${workspace}/draft.md. scripts/build-deliverable.sh

@@ -35,7 +35,7 @@ export function App() {
   const [detail, setDetail] = useState<DeliverableDetail | null>(null);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [events, setEvents] = useState<LoggedEvent[]>([]);
-  const [pending, setPending] = useState<PendingApproval | null>(null);
+  const [pendings, setPendings] = useState<PendingApproval[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -72,18 +72,22 @@ export function App() {
     esRef.current?.close();
     seqRef.current = 0;
     setEvents([]);
-    setPending(null);
+    setPendings([]);
     setActiveRunId(runId);
     esRef.current = openRunStream(runId, (ev) => {
       setEvents((prev) => [...prev, { ...ev, seq: seqRef.current++ }]);
       if (ev.type === "awaiting_approval") {
-        setPending({
+        const ap: PendingApproval = {
           approvalId: String(ev.data.approvalId ?? ""),
           toolName: String(ev.data.toolName ?? "tool"),
           toolInput: ev.data.toolInput,
-        });
+        };
+        // Claude can request several tools at once — queue them all so each can
+        // be approved (otherwise un-shown ones hang the run).
+        setPendings((prev) => (prev.some((p) => p.approvalId === ap.approvalId) ? prev : [...prev, ap]));
       } else if (ev.type === "approval_resolved") {
-        setPending(null);
+        const id = String(ev.data.approvalId ?? "");
+        setPendings((prev) => prev.filter((p) => p.approvalId !== id));
       } else if (ev.type === "done" || ev.type === "error") {
         void finishRun();
       }
@@ -129,10 +133,15 @@ export function App() {
     if (selectedId) await loadDetail(selectedId);
   });
 
-  const onApproval = (decision: "allow" | "deny") => {
-    if (!pending) return;
-    void guard(async () => { await api.resolveApproval(pending.approvalId, decision); });
-    setPending(null);
+  const onApproval = (approvalId: string, decision: "allow" | "deny") => {
+    void guard(async () => { await api.resolveApproval(approvalId, decision); });
+    setPendings((prev) => prev.filter((p) => p.approvalId !== approvalId));
+  };
+
+  const approveAll = () => {
+    const ids = pendings.map((p) => p.approvalId);
+    void guard(async () => { for (const id of ids) await api.resolveApproval(id, "allow"); });
+    setPendings([]);
   };
 
   const onCancel = () => activeRunId && guard(async () => { await api.cancelRun(activeRunId); });
@@ -233,16 +242,23 @@ export function App() {
                 <button className="btn small" disabled={busy} onClick={onCancel}>Cancel</button>
               </div>
 
-              {pending && (
-                <div className="approval">
-                  <div>⚠️ The agent wants to run <b>{pending.toolName}</b>:</div>
-                  <pre>{JSON.stringify(pending.toolInput, null, 2)}</pre>
-                  <div className="actions">
-                    <button className="btn primary" onClick={() => onApproval("allow")}>Approve</button>
-                    <button className="btn" onClick={() => onApproval("deny")}>Reject</button>
-                  </div>
+              {pendings.length > 1 && (
+                <div className="actions">
+                  <button className="btn primary" disabled={busy} onClick={approveAll}>
+                    Approve all ({pendings.length})
+                  </button>
                 </div>
               )}
+              {pendings.map((p) => (
+                <div className="approval" key={p.approvalId}>
+                  <div>⚠️ The agent wants to run <b>{p.toolName}</b>:</div>
+                  <pre>{JSON.stringify(p.toolInput, null, 2)}</pre>
+                  <div className="actions">
+                    <button className="btn primary" onClick={() => onApproval(p.approvalId, "allow")}>Approve</button>
+                    <button className="btn" onClick={() => onApproval(p.approvalId, "deny")}>Reject</button>
+                  </div>
+                </div>
+              ))}
 
               <div className="log">
                 {events.map((e) => (
