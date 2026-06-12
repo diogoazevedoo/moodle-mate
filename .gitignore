@@ -1,0 +1,28 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Playwright auth / persisted browser session (contains live login cookies)
+.auth/
+.pw-profile
+.pw-profile/
+
+# Machine-generated state
+data/
+workspace/
+*.sqlite
+*.sqlite-*
+
+# Per-class private materials (downloaded from Moodle) — keep local
+classes/**/materials/
+classes/**/deliverables/
+classes/**/*.pdf
+
+# Node / build
+node_modules/
+dist/
+.vite/
+
+# OS / editor
+.DS_Store

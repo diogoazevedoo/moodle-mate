@@ -1,0 +1,6 @@
+{
+  "permissions": {
+    "allow": ["Read","Glob","Grep","Bash(pandoc:*)","Bash(zip:*)","Bash(npm run:*)","Write(workspace/**)","Edit(workspace/**)","Write(classes/**)","Edit(classes/**)"],
+    "deny": ["Read(.env)","Read(./.env)","Read(.auth/**)"]
+  }
+}

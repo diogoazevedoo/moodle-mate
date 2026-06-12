@@ -1,0 +1,23 @@
+{
+  "name": "moodle-mate",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local human-in-the-loop assistant for university Moodle deliverables",
+  "type": "module",
+  "workspaces": [
+    "webapp/server",
+    "webapp/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,magenta \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "npm -w webapp/server run dev",
+    "dev:web": "npm -w webapp/web run dev",
+    "build": "npm -w webapp/server run build && npm -w webapp/web run build",
+    "typecheck": "npm -w webapp/server run typecheck && npm -w webapp/web run typecheck",
+    "seed": "npm -w webapp/server run seed",
+    "moodle:login": "node scripts/save-moodle-session.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

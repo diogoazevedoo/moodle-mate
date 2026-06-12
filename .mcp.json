@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--isolated",
+        "--storage-state", "${CLAUDE_PROJECT_DIR:-.}/.auth/moodle-storage-state.json",
+        "--allowed-origins", "https://moodle.istec-porto.pt",
+        "--caps", "storage"
+      ]
+    }
+  }
+}
