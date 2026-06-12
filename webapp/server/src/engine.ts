@@ -26,7 +26,11 @@ const ENGINE_SETTINGS = JSON.stringify({
   hooks: {
     PreToolUse: [
       {
-        matcher: "Write|Edit|MultiEdit|Bash",
+        // Gate writes/shell AND Playwright browser actions. Routing the browser
+        // tools through the hook both PERMITS them (otherwise `claude -p`
+        // default-denies un-granted MCP tools) and keeps a human in the loop —
+        // so you'd see and reject any submit-button click.
+        matcher: "Write|Edit|MultiEdit|Bash|mcp__playwright__.*",
         hooks: [{ type: "command", command: `node "${ENGINE_APPROVAL_HOOK}"` }],
       },
     ],
@@ -96,6 +100,12 @@ ${fmtDeliverable(d)}
 
 Approved plan steps:
 ${stepsText}
+
+First: the tracked description may be only a reminder stub (e.g. "Termina o prazo
+de 'Trabalho'"). If so, read the REAL brief and rubric by opening the deliverable's
+Moodle URL with the Playwright browser tools (browser_navigate then
+browser_snapshot) — one gentle navigation; it pauses for the student's approval.
+Only ${MOODLE_BASE_URL}; never click submit/upload.
 
 Rules (CLAUDE.md — non-negotiable):
 - This is a DRAFT the student must review, edit, and own. Label it DRAFT; cite
